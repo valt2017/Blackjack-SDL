@@ -5,16 +5,16 @@
 #include "karty.h"
 
 // @valt
-
-//figures coordinates
-const int BoardOffset = 2;
 std::map<std::string, SDL_Rect> Cards;
-const int CardSizeX = 81;
-const int CardSizeY = 117;
 std::map<const char, SDL_Texture *> Textures;
 std::map<const char, std::string> Bitmaps;
+const int CardSizeX = 81;
+const int CardSizeY = 117;
 const int posX = 100, posY = 100;
 const int sizeX = 454, sizeY = 454;
+const int FPS = 60;
+Uint32 start;
+int Animation = sizeY;
 
 int main(int argc, char ** argv) {
 	SDL_Window *win = NULL;
@@ -50,7 +50,7 @@ int main(int argc, char ** argv) {
 			std::string Card = "   ";
 			Card[0] = char(oko::farby[j]);
 			Card[1] = char(oko::hodnoty[i]);
-			Cards[Card] = SDL_Rect{ i*CardSizeX, j*CardSizeY, CardSizeX, CardSizeY};
+			Cards[Card] = SDL_Rect{i*CardSizeX, j*CardSizeY, CardSizeX, CardSizeY};
 		}
 
 	oko::balicek blackjack;
@@ -58,6 +58,7 @@ int main(int argc, char ** argv) {
 	std::cout << "click left button for next card, right for stop\n";
 
 	while (1) {
+		start = SDL_GetTicks();
 		SDL_Event e;
 		if (SDL_PollEvent(&e)) {
 			if (e.type == SDL_QUIT) {
@@ -70,6 +71,7 @@ int main(int argc, char ** argv) {
 				mousePos.y = e.motion.y;
 				// Next card
 				if (e.button.button == SDL_BUTTON_LEFT){
+					Animation = sizeY;
 					// new game ?
 					if (player2.VratSkore() != 0) {
 						player1 = oko::hrac("Jozef");
@@ -85,20 +87,13 @@ int main(int argc, char ** argv) {
 				// Oponent play
 				if (e.button.button == SDL_BUTTON_RIGHT) {
 					if (player1.VratSkore() != 0) {
+						Animation = sizeY;
 						while ((player2.VratSkore() < 15) && (!blackjack.Prazdny()))
 							player2.PrijataKarta(blackjack.DalsiaKarta());
 						std::cout << player2.VypisHraca();
 						std::cout << "Winner is:\n";
 						std::cout << (player1 < player2).VypisHraca();
 					}
-				}
-			}
-			/* Mouse button up */
-			if (e.type == SDL_MOUSEBUTTONUP) {
-				SDL_Point mousePos;
-				mousePos.x = e.motion.x;
-				mousePos.y = e.motion.y;
-				if (e.button.button == SDL_BUTTON_LEFT) {
 				}
 			}
 		}
@@ -110,24 +105,28 @@ int main(int argc, char ** argv) {
 		auto texture = Textures.find(0);
 		if (texture != Textures.end()) {
 			// 1.player
-			for (int i = 0; i < player1.karty.size(); i++) {
-				auto it = Cards.find(player1.karty[i].VypisKartu());
+			for (int i = 0; i < player1.PocetKariet(); i++) {
+				auto it = Cards.find(player1[i].VypisKartu());
 					if (it != Cards.end()){
 						SDL_Rect DestR;
 						DestR.x = i*CardSizeX;
-						DestR.y = 0;
+						// Animation only last card
+						if(i == player1.PocetKariet()-1 && player2.VratSkore() == 0)
+							DestR.y = Animation;
+						else
+							DestR.y = 0;
 						DestR.h = CardSizeY;
 						DestR.w = CardSizeX;
 						SDL_RenderCopy(renderer, texture->second, &it->second, &DestR);
 					}
 				}
 			// 2.player
-			for (int i = 0; i < player2.karty.size(); i++) {
-				auto it = Cards.find(player2.karty[i].VypisKartu());
+			for (int i = 0; i < player2.PocetKariet(); i++) {
+				auto it = Cards.find(player2[i].VypisKartu());
 				if (it != Cards.end()) {
 					SDL_Rect DestR;
 					DestR.x = i*CardSizeX;
-					DestR.y = CardSizeY*2;
+					DestR.y = Animation + CardSizeY*2;
 					DestR.h = CardSizeY;
 					DestR.w = CardSizeX;
 					SDL_RenderCopy(renderer, texture->second, &it->second, &DestR);
@@ -135,6 +134,10 @@ int main(int argc, char ** argv) {
 			}
 		}
 		SDL_RenderPresent(renderer);
+		if (Animation != 0)
+			Animation--;
+		if (50 / FPS > SDL_GetTicks() - start)
+			SDL_Delay(50 / FPS - (SDL_GetTicks() - start));
 	}
 	for (auto texture : Textures) {
 		SDL_DestroyTexture(texture.second);

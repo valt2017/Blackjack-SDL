@@ -44,12 +44,12 @@ namespace oko
   {
     private:
       string meno;
-//      vector <karta> karty;
+      vector <karta> karty;
       unsigned int skore;
     public:
-//    operator []...
-	  vector <karta> karty;
+	  karta	operator[](unsigned int);
       hrac(string m_meno);
+	  unsigned int PocetKariet();
       unsigned int VratSkore();
       void PrijataKarta(karta nova);
       string VypisHraca();

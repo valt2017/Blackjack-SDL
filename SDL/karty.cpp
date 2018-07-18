@@ -123,3 +123,13 @@ hrac hrac::operator < (hrac & h)
     return *this;
   return h;
 }
+
+karta hrac::operator[](unsigned int indexKarty) 
+{
+	return karty[indexKarty];
+}
+
+unsigned int hrac::PocetKariet()
+{
+	return karty.size();
+}
